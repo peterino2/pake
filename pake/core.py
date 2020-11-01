@@ -1,4 +1,5 @@
 import colorama
+import argparse
 colorama.init(autoreset=True)
 
 # --- singletons ---
@@ -14,47 +15,41 @@ def show_jobs():
         s = ""
     print(f"There {word} {len(g_PakeJobs)} job{s} registered:")
     for name, job in g_PakeJobs.items():
-        if job.docs is not None:
-            print(f"    {name} - {job.docs}")
+        if job.desc is not None:
+            print(f"    {name} - {job.desc}")
         else:
             print(f"    {name}")
 
 
 def run_jobs():
     for name, job in g_PakeJobs.items():
+        print(f"Running Pake job {name}")
         job.func()
 
-
-
 class jobclass:
-    def __init__(self, func):
+    def __init__(
+            self, 
+            func, 
+            desc=None,
+            depends=None,
+            fdepends=None
+        ):
         self.func = func
         self.name = func.__name__
         self.docs = func.__doc__
 
+        self.desc = desc
 
-def job(func):
-    def wrapper_job(*args, **kwargs):
-        func(*args, **kwargs)
-    global g_PakeJobs
-    g_PakeJobs[func.__name__] = jobclass(func)
+        self.depends = depends if depends is not None else []
+        self.fdepends = fdepends if fdepends is not None else []
 
-    return wrapper_job
+    def check_deps(self):
+        pass
 
+def job(*args, **kwargs):
+    def decorator(f):
+        global g_PakeJobs
+        g_PakeJobs[f.__name__] = jobclass(f, **kwargs)
+        return f
+    return decorator
 
-@job
-def test_job():
-    print("[Job running]")
-
-@job
-def test_job2():
-    "a docstring"
-    print("[Job2 running]")
-
-@job
-def test_job3():
-    print("[Job2 running]")
-
-if __name__ == "__main__":
-    show_jobs()
-    run_jobs()
